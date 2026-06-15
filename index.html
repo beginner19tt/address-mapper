@@ -310,40 +310,39 @@ async function processFile(file) {
 }
 
 // ============================================================
-// 住所抽出：郵便番号を完全除去し、都道府県〜番地まで抽出
+// 住所抽出：都道府県を起点に抽出し、郵便番号を完全排除
 // ============================================================
+const PREF_LIST = '東京都|大阪府|京都府|北海道|神奈川県|愛知県|埼玉県|千葉県|兵庫県|福岡県|静岡県|茨城県|広島県|宮城県|新潟県|長野県|岐阜県|栃木県|群馬県|岡山県|福島県|三重県|熊本県|鹿児島県|沖縄県|滋賀県|山口県|愛媛県|奈良県|長崎県|青森県|岩手県|大分県|石川県|山形県|宮崎県|富山県|秋田県|香川県|和歌山県|佐賀県|山梨県|福井県|徳島県|高知県|島根県|鳥取県';
+
 function extractAddresses(text) {
-  const prefs = '東京都|大阪府|京都府|北海道|神奈川県|愛知県|埼玉県|千葉県|兵庫県|福岡県|静岡県|茨城県|広島県|宮城県|新潟県|長野県|岐阜県|栃木県|群馬県|岡山県|福島県|三重県|熊本県|鹿児島県|沖縄県|滋賀県|山口県|愛媛県|奈良県|長崎県|青森県|岩手県|大分県|石川県|山形県|宮崎県|富山県|秋田県|香川県|和歌山県|佐賀県|山梨県|福井県|徳島県|高知県|島根県|鳥取県';
+  // ① 記号・余分な空白を詰める
+  let t = text.replace(/[\uF0B7\u2022・●]+/g, '').replace(/\s+/g, '');
 
-  // 記号・空白を除去し、郵便番号を完全削除
-  let cleanText = text.replace(/[\uF0B7\u2022・●\s]+/g, '');
-  cleanText = cleanText.replace(/〒?[0-9０-９]{3}[-－ー][0-9０-９]{4}/g, '');
+  // ② 郵便番号を「〒あり・なし・全角数字」全パターンで削除
+  //    〒?  数字3桁  区切り  数字4桁
+  t = t.replace(/〒?[0-9０-９]{3}[－\-ー―][0-9０-９]{4}/g, '');
 
-  // 都道府県〜番地（号室・階・F付きも対応）まで抽出
+  // ③ 都道府県から番地末尾まで抽出
+  //    都道府県 → 市区町村（漢字）→ 番地数字（丁目/番/号/ハイフン区切り）→ 号室等（任意）
   const regex = new RegExp(
-    `(${prefs})` +
-    `[^\d０-９]*?` +
-    // 番地部分：数字+丁目/番/地/号などの繰り返し or ハイフン区切り
-    `[0-9０-９]+` +
-    `(?:` +
-      `(?:[丁目番地号棟\\-－ー]+[0-9０-９]+)+` +
-    `)?` +
-    // 号室・階・Fなどの付加情報（任意）
-    `(?:[0-9０-９]*(?:号室|室|階|F|f))?`,
+    `(${PREF_LIST})` +
+    `[^0-9０-９]+?` +                                      // 市区町村（漢字部分）
+    `[0-9０-９]+` +                                         // 最初の数字
+    `(?:[丁目番地号棟\\-－ー―]+[0-9０-９]+)*` +             // 丁目・番地・号の繰り返し
+    `(?:[0-9０-９]*(?:号室|室|階|[Ff]))?`,                  // 号室・階（任意）
     'g'
   );
 
-  const raw = cleanText.match(regex) || [];
+  const raw = t.match(regex) || [];
 
-  // 後処理：郵便番号の数字残骸が先頭に残っていれば都道府県から切り出す
-  const prefReg = new RegExp(`(${prefs})`);
-  const cleaned = raw.map(addr => {
+  // ④ 念のため：都道府県より前に数字が紛れ込んでいたら切り落とす
+  const prefReg = new RegExp(`(${PREF_LIST})`);
+  const result = raw.map(addr => {
     const m = addr.match(prefReg);
-    if (m) return addr.slice(addr.indexOf(m[0]));
-    return addr;
+    return m ? addr.slice(addr.indexOf(m[0])) : addr;
   });
 
-  return [...new Set(cleaned)].filter(a => a.length > 4);
+  return [...new Set(result)].filter(a => a.length > 5);
 }
 
 // ============================================================
@@ -369,11 +368,11 @@ function mapsUrl(addresses) {
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}`;
 }
 
-// 郵便番号・記号を除去して住所文字列を返す
+// 郵便番号・記号を除去して住所文字列を返す（Maps送信前の最終クリーン）
 function cleanAddr(addr) {
   return addr
-    .replace(/〒?[0-9０-９]{3}[-－ー][0-9０-９]{4}/g, '')
-    .replace(/[\s　]+/g, '')
+    .replace(/〒?[0-9０-９]{3}[－\-ー―][0-9０-９]{4}/g, '') // 郵便番号
+    .replace(/[\s　]+/g, '')                                   // 全角半角スペース
     .trim();
 }
 
@@ -381,7 +380,7 @@ function cleanAddr(addr) {
 // 町名抽出（グループ化キー）
 // ============================================================
 function extractTown(address) {
-  const body = address.replace(/^(?:東京都|大阪府|京都府|北海道|.+?[都道府県])/, '');
+  const body = address.replace(new RegExp(`^(${PREF_LIST})`), '');
   const nameOnly = body.replace(/[0-9０-９].*$/, '').trim();
  
   let m = nameOnly.match(/^(.+?市.+?区)(.+)$/);
