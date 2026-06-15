@@ -40,11 +40,11 @@
   #open-all-btn { display: none; width: 100%; margin-bottom: 20px; padding: 14px; background: #3a7bd5; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; letter-spacing: .02em; }
   #open-all-btn:hover { background: #2a5fb5; }
 
-  .town-card { background: #fff; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  .town-card { background: #fff; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); transition: all 0.3s; }
   .town-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f7f9ff; border-bottom: 1px solid #e8edf5; cursor: pointer; user-select: none; }
   .town-card-header:hover { background: #edf1fa; }
   .town-name { font-size: 15px; font-weight: 600; color: #1a3a6e; display: flex; align-items: center; gap: 8px; }
-  .town-count { font-size: 12px; background: #dde8f8; color: #2a5bc8; padding: 2px 9px; border-radius: 12px; font-weight: 500; }
+  .town-count { font-size: 12px; background: #dde8f8; color: #2a5bc8; padding: 2px 9px; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
   .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
   .btn-app { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 7px; padding: 6px 11px; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; white-space: nowrap; }
@@ -59,30 +59,23 @@
   .addr-list { padding: 6px 0; display: none; }
   .addr-list.open { display: block; }
 
-  /* 💡 NEW: QRコードを表示するエリアのスタイル */
-  .qr-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    background: #f4f7fc;
-    border-bottom: 1px solid #e8edf5;
-    gap: 8px;
-  }
-  .qr-box span { font-size: 11px; color: #556; font-weight: 700; }
-  .qr-code-img img { border: 4px solid #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; background: #f4f7fc; border-bottom: 1px solid #e8edf5; gap: 12px; }
+  .qr-box span { font-size: 13px; color: #445; font-weight: 700; }
+  .qr-code-img img { border: 8px solid #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: all 0.3s; }
 
-  .addr-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 18px; font-size: 13px; border-bottom: 1px solid #f0f3f8; gap: 8px; }
+  .addr-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 18px; font-size: 13px; border-bottom: 1px solid #f0f3f8; gap: 8px; transition: opacity 0.3s, padding 0.3s, height 0.3s; overflow: hidden; }
   .addr-item:last-child { border-bottom: none; }
   .addr-text { color: #334; flex: 1; font-size: 12px; }
   .addr-btns { display: flex; gap: 4px; flex-shrink: 0; }
 
-  .btn-single { display: inline-flex; align-items: center; border: none; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; white-space: nowrap; }
+  .btn-single { display: inline-flex; align-items: center; border: none; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; white-space: nowrap; }
   .btn-single:hover { opacity: .8; }
   .bs-google { background: #4285f4; color: #fff; }
   .bs-yahoo  { background: #ff0033; color: #fff; }
   .bs-apple  { background: #1a1a2e; color: #fff; }
+  
+  .bs-delete { background: #e0e4eb; color: #556; margin-left: 4px; }
+  .bs-delete:hover { background: #ff4d4f; color: #fff; }
 
   .footer-note { margin-top: 28px; padding: 14px 18px; background: #fff8e8; border-left: 4px solid #f0b429; border-radius: 0 8px 8px 0; font-size: 12px; color: #7a5800; line-height: 1.7; }
 </style>
@@ -173,11 +166,7 @@ function extractAddresses(rawText) {
   let m;
   while ((m = prefReg.exec(t)) !== null) positions.push(m.index);
 
-  const addrReg = new RegExp(
-    '^(?:' + PREF_STR + ')' +
-    '[^0-9０-９]+?' +
-    ADDR_CLS + '+'
-  );
+  const addrReg = new RegExp('^(?:' + PREF_STR + ')[^0-9０-９]+?' + ADDR_CLS + '+');
 
   const results = [];
   for (let i = 0; i < positions.length; i++) {
@@ -251,9 +240,61 @@ function appleMapsUrl(addrs) {
 
 function enc(s) { return encodeURIComponent(s); }
 
-// ============================================================
-// 描画 & 💡 QRコード自動生成
-// ============================================================
+// 💡 NEW: 住所を消去し、QRコードとルートURLを再計算する関数
+function removeAddress(btn) {
+  const item = btn.closest('.addr-item');
+  const card = btn.closest('.town-card');
+  
+  item.style.opacity = '0';
+  
+  setTimeout(() => {
+    // 1. 項目を完全にDOMから削除
+    item.remove();
+    
+    // 2. 残っている項目をすべて取得
+    const remainingItems = card.querySelectorAll('.addr-item');
+    
+    // もし全部消し終わったら、カード自体を隠す
+    if (remainingItems.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+    
+    // 3. 残った要素から、純粋な住所データ（data-addr）だけを配列にまとめる
+    const remainingAddrs = Array.from(remainingItems).map(el => el.getAttribute('data-addr'));
+    
+    // 4. グループの件数バッジを更新
+    card.querySelector('.town-count').textContent = remainingAddrs.length + '件';
+    
+    // 5. リストの番号（1. 2. 3...）を綺麗に振り直す
+    remainingItems.forEach((el, index) => {
+      el.querySelector('.addr-text').textContent = `${index + 1}. ${esc(el.getAttribute('data-addr'))}`;
+    });
+    
+    // 6. 新しい住所リストでURLを再生成して、各アプリのボタンを上書き
+    const gUrl = googleMapsUrl(remainingAddrs);
+    const yUrl = yahooNaviUrl(remainingAddrs);
+    const aUrl = appleMapsUrl(remainingAddrs);
+    
+    card.querySelector('.btn-app.btn-google').href = gUrl;
+    card.querySelector('.btn-app.btn-yahoo').href = yUrl;
+    card.querySelector('.btn-app.btn-apple').href = aUrl;
+    
+    // 7. QRコードの中身を一回空っぽにしてから、新しいルートURLで書き直す
+    const qrBox = card.querySelector('.qr-code-img');
+    qrBox.innerHTML = '';
+    new QRCode(qrBox, {
+      text: gUrl,
+      width: 200,
+      height: 200,
+      colorDark : "#1a1a2e",
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.L
+    });
+    
+  }, 300); // 0.3秒のアニメーション後に処理
+}
+
 function renderResults(grouped) {
   const towns = Object.keys(grouped);
   const total = Object.values(grouped).reduce((s, a) => s + a.length, 0);
@@ -266,7 +307,6 @@ function renderResults(grouped) {
     <button id="open-all-btn" onclick="openAllMaps()">📍 全グループをGoogle Mapsで開く</button>
   `;
 
-  // ループ用にインデックスを持たせる
   let idxCard = 0;
   for (const [town, addrs] of Object.entries(grouped)) {
     const gUrl = googleMapsUrl(addrs);
@@ -285,16 +325,17 @@ function renderResults(grouped) {
         </div>
         <div class="addr-list">
           <div class="qr-box">
-            <span>📱 スマホでスキャンして現在地からナビ開始（Google Maps）</span>
+            <span>📱 スマホのカメラでスキャンしてナビ開始！</span>
             <div class="qr-code-img" id="qr-${idxCard}"></div>
           </div>
           ${addrs.map((a, idx) => `
-            <div class="addr-item">
+            <div class="addr-item" data-addr="${esc(a)}">
               <span class="addr-text">${idx + 1}. ${esc(a)}</span>
               <div class="addr-btns">
                 <a class="btn-single bs-google" href="https://www.google.com/maps/search/?api=1&query=${enc(cleanForMap(a))}" target="_blank" rel="noopener">G</a>
                 <a class="btn-single bs-yahoo"  href="https://map.yahoo.co.jp/route/car?to=${enc(cleanForMap(a))}" target="_blank" rel="noopener">Y</a>
                 <a class="btn-single bs-apple"  href="https://maps.apple.com/?daddr=${enc(cleanForMap(a))}" target="_blank" rel="noopener">A</a>
+                <button class="btn-single bs-delete" onclick="removeAddress(this)">✖ 消去</button>
               </div>
             </div>
           `).join('')}
@@ -313,17 +354,16 @@ function renderResults(grouped) {
   resultsEl.innerHTML = html;
   document.getElementById('open-all-btn').style.display = 'block';
 
-  // 💡 NEW: 描画が終わった後に、各グループのGoogle MapsのURLを元にQRコードを裏で自動生成
   idxCard = 0;
   for (const [town, addrs] of Object.entries(grouped)) {
     const gUrl = googleMapsUrl(addrs);
     new QRCode(document.getElementById(`qr-${idxCard}`), {
       text: gUrl,
-      width: 120,
-      height: 120,
+      width: 200,
+      height: 200,
       colorDark : "#1a1a2e",
       colorLight : "#ffffff",
-      correctLevel : QRCode.CorrectLevel.H
+      correctLevel : QRCode.CorrectLevel.L
     });
     idxCard++;
   }
