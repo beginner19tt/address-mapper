@@ -1,305 +1,802 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>住所マッパー｜チラシ配りルート整理</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f0f4f8; color: #1a1a2e; min-height: 100vh; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>住所マッパー｜チラシ配りルート整理</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Hiragino Sans", "Meiryo", sans-serif;
+        background: #0b0d16;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
 
-  header { background: #1a1a2e; color: #fff; padding: 20px 32px; display: flex; align-items: center; gap: 14px; }
-  header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.02em; }
-  header span { font-size: 13px; color: #8899bb; margin-top: 2px; display: block; }
-  .icon-map { width: 36px; height: 36px; background: #3a7bd5; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .icon-map svg { width: 20px; height: 20px; fill: #fff; }
+      /* ─── HERO / PORTFOLIO CARD ─── */
+      .hero-wrapper {
+        max-width: 860px;
+        margin: 52px auto 0;
+        padding: 0 24px;
+      }
 
-  main { max-width: 860px; margin: 0 auto; padding: 32px 20px; }
+      .hero {
+        background: #151929;
+        border: 1px solid #252d42;
+        border-radius: 16px;
+        padding: 36px 36px 32px;
+      }
 
-  .drop-zone { border: 2px dashed #b0c0d8; border-radius: 14px; background: #fff; text-align: center; padding: 52px 20px; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
-  .drop-zone:hover, .drop-zone.drag-over { border-color: #3a7bd5; background: #f0f5ff; }
-  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .drop-zone .dz-icon { font-size: 40px; margin-bottom: 12px; }
-  .drop-zone .dz-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-  .drop-zone .dz-sub { font-size: 13px; color: #667; }
+      .badge-tag {
+        display: inline-block;
+        background: transparent;
+        border: 1px solid #2ea043;
+        color: #3fb950;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.05em;
+        margin-bottom: 18px;
+      }
 
-  #status { margin-top: 18px; padding: 12px 18px; border-radius: 10px; font-size: 14px; display: none; align-items: center; gap: 10px; }
-  #status.loading { display: flex; background: #e8f0fe; color: #1a5fc8; }
-  #status.done    { display: flex; background: #e6f9f0; color: #1a7a4a; }
-  #status.error   { display: flex; background: #fdecea; color: #c0392b; }
-  .spinner { width: 18px; height: 18px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+      .hero-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin-bottom: 14px;
+        line-height: 1.45;
+      }
 
-  #results { margin-top: 28px; }
-  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .result-header h2 { font-size: 17px; font-weight: 600; }
-  .badge { background: #3a7bd5; color: #fff; font-size: 12px; padding: 3px 10px; border-radius: 20px; }
+      .hero-desc {
+        font-size: 14px;
+        color: #8892a4;
+        line-height: 1.85;
+        margin-bottom: 22px;
+      }
 
-  #open-all-btn { display: none; width: 100%; margin-bottom: 20px; padding: 14px; background: #3a7bd5; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; letter-spacing: .02em; }
-  #open-all-btn:hover { background: #2a5fb5; }
+      .feature-banner {
+        background: #0e1120;
+        border: 1px solid #252d42;
+        border-radius: 10px;
+        padding: 12px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+        font-size: 14px;
+        color: #6eb3ff;
+        font-weight: 600;
+      }
+      .feature-banner-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
 
-  .town-card { background: #fff; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); transition: all 0.3s; }
-  .town-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: #f7f9ff; border-bottom: 1px solid #e8edf5; cursor: pointer; user-select: none; }
-  .town-card-header:hover { background: #edf1fa; }
-  .town-name { font-size: 15px; font-weight: 600; color: #1a3a6e; display: flex; align-items: center; gap: 8px; }
-  .town-count { font-size: 12px; background: #dde8f8; color: #2a5bc8; padding: 2px 9px; border-radius: 12px; font-weight: 500; transition: all 0.2s; }
-  .card-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+      /* ─── STEPS ─── */
+      .steps {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+        align-items: start;
+        gap: 0;
+      }
 
-  .btn-app { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 7px; padding: 6px 11px; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: none; transition: opacity .15s; white-space: nowrap; }
-  .btn-app:hover { opacity: .85; }
-  .btn-google { background: #4285f4; color: #fff; }
-  .btn-yahoo  { background: #ff0033; color: #fff; }
-  .btn-apple  { background: #1a1a2e; color: #fff; }
+      .step-card {
+        background: #0e1120;
+        border: 1px solid #252d42;
+        border-radius: 14px;
+        padding: 24px 18px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+      }
 
-  .chevron { transition: transform .2s; color: #667; font-size: 16px; }
-  .chevron.open { transform: rotate(180deg); }
+      .step-num {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid #6eb3ff;
+        color: #6eb3ff;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
 
-  .addr-list { padding: 6px 0; display: none; }
-  .addr-list.open { display: block; }
+      .step-icon {
+        font-size: 32px;
+        line-height: 1;
+      }
 
-  .qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; background: #f4f7fc; border-bottom: 1px solid #e8edf5; gap: 12px; }
-  .qr-box span { font-size: 13px; color: #445; font-weight: 700; }
-  .qr-code-img img { border: 8px solid #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: all 0.3s; }
+      .step-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #e2e8f0;
+      }
 
-  .addr-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 18px; font-size: 13px; border-bottom: 1px solid #f0f3f8; gap: 8px; transition: opacity 0.3s, padding 0.3s, height 0.3s; overflow: hidden; }
-  .addr-item:last-child { border-bottom: none; }
-  .addr-text { color: #334; flex: 1; font-size: 12px; }
-  .addr-btns { display: flex; gap: 4px; flex-shrink: 0; }
+      .step-desc {
+        font-size: 12px;
+        color: #8892a4;
+        line-height: 1.65;
+      }
 
-  .btn-single { display: inline-flex; align-items: center; border: none; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: none; transition: all .15s; white-space: nowrap; }
-  .btn-single:hover { opacity: .8; }
-  .bs-google { background: #4285f4; color: #fff; }
-  .bs-yahoo  { background: #ff0033; color: #fff; }
-  .bs-apple  { background: #1a1a2e; color: #fff; }
-  
-  .bs-delete { background: #e0e4eb; color: #556; margin-left: 4px; }
-  .bs-delete:hover { background: #ff4d4f; color: #fff; }
+      .step-code {
+        background: #151929;
+        border: 1px solid #252d42;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 11px;
+        font-family: "SFMono-Regular", "Consolas", monospace;
+        color: #9b8ee8;
+        margin-top: 2px;
+      }
 
-  .footer-note { margin-top: 28px; padding: 14px 18px; background: #fff8e8; border-left: 4px solid #f0b429; border-radius: 0 8px 8px 0; font-size: 12px; color: #7a5800; line-height: 1.7; }
-</style>
-</head>
-<body>
+      .step-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3a4460;
+        font-size: 22px;
+        padding: 0 6px;
+        margin-top: 55px;
+      }
 
-<header>
-  <div class="icon-map">
-    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-  </div>
-  <div>
-    <h1>住所マッパー</h1>
-    <span>PDFから住所を読み取り、町名でグループ化・丁目順に並べてナビアプリへ送ります</span>
-  </div>
-</header>
+      /* ─── HOWTO ─── */
+      .howto-toggle {
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 13px 18px;
+        background: #151929;
+        border: 1px solid #252d42;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #c8d0e0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background 0.2s;
+      }
+      .howto-toggle:hover {
+        background: #1c2235;
+      }
+      .howto-panel {
+        display: none;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #252d42;
+      }
+      .howto-panel.open {
+        display: block;
+      }
+      .howto-panel embed {
+        width: 100%;
+        height: 600px;
+        border: none;
+        display: block;
+      }
 
-<main>
-  <div class="drop-zone" id="drop-zone">
-    <input type="file" accept=".pdf" id="file-input">
-    <div class="dz-icon">📄</div>
-    <div class="dz-title">PDFファイルをここにドロップ</div>
-    <div class="dz-sub">またはクリックしてファイルを選択</div>
-  </div>
-  <div id="status"></div>
-  <div id="results"></div>
-</main>
+      /* ─── APP AREA ─── */
+      .app-area {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 32px 24px 48px;
+      }
 
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      .drop-zone {
+        border: 2px dashed #252d42;
+        border-radius: 14px;
+        background: #151929;
+        text-align: center;
+        padding: 52px 20px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+        position: relative;
+      }
+      .drop-zone:hover,
+      .drop-zone.drag-over {
+        border-color: #6eb3ff;
+        background: #1c2235;
+      }
+      .drop-zone input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .drop-zone .dz-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+      }
+      .drop-zone .dz-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #c8d0e0;
+        margin-bottom: 6px;
+      }
+      .drop-zone .dz-sub {
+        font-size: 13px;
+        color: #4a5470;
+      }
 
-const dropZone  = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const statusEl  = document.getElementById('status');
-const resultsEl = document.getElementById('results');
+      #status {
+        margin-top: 18px;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 14px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+      }
+      #status.loading {
+        display: flex;
+        background: #131c38;
+        color: #6eb3ff;
+        border: 1px solid #1e3260;
+      }
+      #status.done {
+        display: flex;
+        background: #0e1f15;
+        color: #3fb950;
+        border: 1px solid #1a3d25;
+      }
+      #status.error {
+        display: flex;
+        background: #200f13;
+        color: #f85149;
+        border: 1px solid #4a1a22;
+      }
+      .spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  const f = e.dataTransfer.files[0];
-  if (f && f.type === 'application/pdf') processFile(f);
-  else showStatus('error', 'PDFファイルを選択してください。');
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+      #results {
+        margin-top: 28px;
+      }
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .result-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #c8d0e0;
+      }
+      .badge {
+        background: #1a2748;
+        color: #6eb3ff;
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid #253660;
+      }
 
-function showStatus(type, msg) {
-  statusEl.className = type;
-  statusEl.innerHTML = type === 'loading'
-    ? `<div class="spinner"></div><span>${msg}</span>`
-    : `<span>${type === 'done' ? '✅' : '❌'}</span><span>${msg}</span>`;
-}
+      #open-all-btn {
+        display: none;
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 14px;
+        background: #1c4a28;
+        color: #3fb950;
+        border: 1px solid #2a6638;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        letter-spacing: 0.02em;
+      }
+      #open-all-btn:hover {
+        background: #23602e;
+      }
 
-async function processFile(file) {
-  resultsEl.innerHTML = '';
-  showStatus('loading', 'PDFを読み込んでいます...');
-  try {
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      fullText += content.items.map(it => it.str).join(' ') + '\n';
-    }
-    const addresses = extractAddresses(fullText);
-    if (!addresses.length) {
-      showStatus('error', '住所が見つかりませんでした。PDFにテキストが含まれているか確認してください。');
-      return;
-    }
-    const grouped = groupByTown(addresses);
-    showStatus('done', `${addresses.length}件の住所を ${Object.keys(grouped).length}つの町名グループに分けました。`);
-    renderResults(grouped);
-  } catch (err) {
-    showStatus('error', 'PDFの読み込みに失敗しました: ' + err.message);
-  }
-}
+      .town-card {
+        background: #151929;
+        border: 1px solid #252d42;
+        border-radius: 12px;
+        margin-bottom: 14px;
+        overflow: hidden;
+      }
+      .town-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 18px;
+        border-bottom: 1px solid #1e2538;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+      }
+      .town-card-header:hover {
+        background: #1c2235;
+      }
+      .town-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #c8d0e0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .town-count {
+        font-size: 11px;
+        background: #1a2748;
+        color: #6eb3ff;
+        padding: 2px 9px;
+        border-radius: 12px;
+        font-weight: 500;
+        border: 1px solid #253660;
+      }
+      .card-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
 
-const PREF_STR = '東京都|大阪府|京都府|北海道|神奈川県|愛知県|埼玉県|千葉県|兵庫県|福岡県|静岡県|茨城県|広島県|宮城県|新潟県|長野県|岐阜県|栃木県|群馬県|岡山県|福島県|三重県|熊本県|鹿児島県|沖縄県|滋賀県|山口県|愛媛県|奈良県|長崎県|青森県|岩手県|大分県|石川県|山形県|宮崎県|富山県|秋田県|香川県|和歌山県|佐賀県|山梨県|福井県|徳島県|高知県|島根県|鳥取県';
-const ADDR_CLS = '[\u002D0-9０-９丁目番地号棟室階Ff－ー―]';
+      .btn-app {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: none;
+        border-radius: 7px;
+        padding: 6px 11px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: opacity 0.15s;
+        white-space: nowrap;
+      }
+      .btn-app:hover {
+        opacity: 0.8;
+      }
+      .btn-google {
+        background: #4285f4;
+        color: #fff;
+      }
+      .btn-yahoo {
+        background: #ff0033;
+        color: #fff;
+      }
+      .btn-apple {
+        background: #2a3048;
+        color: #c8d0e0;
+        border: 1px solid #363f5c;
+      }
 
-function extractAddresses(rawText) {
-  let t = rawText.replace(/[\uF0B7\u2022・●]+/g, '').replace(/\s+/g, '');
-  t = t.replace(/〒?[0-9０-９]{3}[\u002D－ー―][0-9０-９]{4}/g, '');
+      .chevron {
+        transition: transform 0.2s;
+        color: #4a5470;
+        font-size: 14px;
+      }
+      .chevron.open {
+        transform: rotate(180deg);
+      }
 
-  const prefReg = new RegExp('(?:' + PREF_STR + ')', 'g');
-  const positions = [];
-  let m;
-  while ((m = prefReg.exec(t)) !== null) positions.push(m.index);
+      .addr-list {
+        display: none;
+      }
+      .addr-list.open {
+        display: block;
+      }
 
-  const addrReg = new RegExp('^(?:' + PREF_STR + ')[^0-9０-９]+?' + ADDR_CLS + '+');
+      .qr-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        background: #0e1120;
+        border-bottom: 1px solid #1e2538;
+        gap: 12px;
+      }
+      .qr-box span {
+        font-size: 13px;
+        color: #8892a4;
+        font-weight: 600;
+      }
+      .qr-code-img img {
+        border: 8px solid #151929;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      }
 
-  const results = [];
-  for (let i = 0; i < positions.length; i++) {
-    const chunk = t.slice(positions[i], positions[i + 1] ?? t.length);
-    const hit = chunk.match(addrReg);
-    if (hit) {
-      const addr = hit[0].replace(/[丁目番地棟室階]+$/, '');
-      if (addr.length > 5) results.push(addr);
-    }
-  }
-  return [...new Set(results)];
-}
+      .addr-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 18px;
+        font-size: 13px;
+        border-bottom: 1px solid #1e2538;
+        gap: 8px;
+        transition: opacity 0.3s;
+      }
+      .addr-item:last-child {
+        border-bottom: none;
+      }
+      .addr-text {
+        color: #8892a4;
+        flex: 1;
+        font-size: 12px;
+      }
+      .addr-btns {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
 
-function extractTown(addr) {
-  const body = addr.replace(new RegExp('^(?:' + PREF_STR + ')'), '');
-  const nameOnly = body.replace(/[0-9０-９].*$/, '').trim();
-  let m;
-  m = nameOnly.match(/^(.+?市.+?区)(.*)$/);  if (m) return m[1] + (m[2] || '');
-  m = nameOnly.match(/^(.+?市)(.*)$/);
-  if (m) { const ku = m[2].match(/^(.+?[区町村])/); return m[1] + (ku ? ku[1] : m[2]); }
-  m = nameOnly.match(/^(.+?区)(.*)$/);        if (m) return m[1] + (m[2] || '');
-  return nameOnly.slice(0, 15);
-}
+      .btn-single {
+        display: inline-flex;
+        align-items: center;
+        border: none;
+        border-radius: 5px;
+        padding: 3px 7px;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .btn-single:hover {
+        opacity: 0.8;
+      }
+      .bs-google {
+        background: #4285f4;
+        color: #fff;
+      }
+      .bs-yahoo {
+        background: #ff0033;
+        color: #fff;
+      }
+      .bs-apple {
+        background: #2a3048;
+        color: #c8d0e0;
+        border: 1px solid #363f5c;
+      }
+      .bs-delete {
+        background: #1e2538;
+        color: #8892a4;
+        margin-left: 4px;
+        border: 1px solid #2d3655;
+      }
+      .bs-delete:hover {
+        background: #7a1e1e;
+        color: #ff8080;
+        border-color: #7a1e1e;
+      }
 
-function chomeKey(addr) {
-  const normalized = addr.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-  const m = normalized.match(/(\d+)丁目/);
-  if (m) return parseInt(m[1], 10);
-  const n = normalized.match(/(\d+)/);
-  return n ? parseInt(n[1], 10) : 9999;
-}
+      .footer-note {
+        margin-top: 28px;
+        padding: 14px 18px;
+        background: #17140a;
+        border-left: 4px solid #7a5c1a;
+        border-radius: 0 8px 8px 0;
+        font-size: 12px;
+        color: #c9a22a;
+        line-height: 1.7;
+      }
 
-function groupByTown(addresses) {
-  const groups = {};
-  for (const addr of addresses) {
-    const town = extractTown(addr);
-    if (!groups[town]) groups[town] = [];
-    groups[town].push(addr);
-  }
-  for (const town in groups) {
-    groups[town].sort((a, b) => chomeKey(a) - chomeKey(b));
-  }
-  return Object.fromEntries(
-    Object.entries(groups).sort((a, b) => b[1].length - a[1].length)
-  );
-}
+      @media (max-width: 600px) {
+        .steps {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .step-arrow {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HERO / PORTFOLIO CARD -->
+    <div class="hero-wrapper">
+      <div class="hero">
+        <div class="badge-tag">個人開発</div>
+        <div class="hero-title">住所マッパー（PDF住所読み取り・ルート整理）</div>
+        <div class="hero-desc">
+          チラシ配布リストのPDFをドロップするだけで住所を自動抽出し、町名でグループ化・丁目順に整列する処理をゼロから実装。Google
+          Maps / Yahoo!カーナビ / Apple
+          マップへの一括送信とQRコードによるスマホ即転送に対応。住所の個別消去でリアルタイムにルートを再計算し、QRコードも自動更新する仕組みも実装。
+        </div>
+        <div class="feature-banner">
+          <span class="feature-banner-icon">🗺️</span>
+          チラシ配りのルート整理を完全自動化 — 手作業ゼロに
+        </div>
 
-function cleanForMap(addr) {
-  return addr.replace(/([0-9０-９][0-9０-９\-－ー丁目番地号]*)[^0-9０-９\-－ー丁目番地号]+.*$/, '$1');
-}
+        <div class="steps">
+          <div class="step-card">
+            <div class="step-num">①</div>
+            <div class="step-icon">📄</div>
+            <div class="step-name">住所を集める</div>
+            <div class="step-desc">PDFから住所を<br />一括抽出・重複除去</div>
+            <div class="step-code">extractAddresses()</div>
+          </div>
+          <div class="step-arrow">›</div>
+          <div class="step-card">
+            <div class="step-num">②</div>
+            <div class="step-icon">🗂️</div>
+            <div class="step-name">自動で整理</div>
+            <div class="step-desc">町名でグループ化し<br />丁目順に並べ直す</div>
+            <div class="step-code">groupByTown()</div>
+          </div>
+          <div class="step-arrow">›</div>
+          <div class="step-card">
+            <div class="step-num">③</div>
+            <div class="step-icon">🧭</div>
+            <div class="step-name">ナビへ送信</div>
+            <div class="step-desc">マップアプリに経路送信<br />QRでスマホに転送</div>
+            <div class="step-code">googleMapsUrl()</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-function googleMapsUrl(addrs) {
-  const targets = addrs.slice(0, 10);
-  const dest = enc(cleanForMap(targets[targets.length - 1]));
-  if (targets.length === 1) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
-  }
-  const wp = targets.slice(0, -1).map(a => enc(cleanForMap(a))).join('%7C');
-  return `https://www.google.com/maps/dir/?api=1&destination=${dest}&waypoints=${wp}`;
-}
+    <!-- APP SECTION -->
+    <div class="app-area">
+      <button class="howto-toggle" onclick="toggleHowto(this)">
+        📖 使い方・仕組みを見る <span class="chevron">▼</span>
+      </button>
+      <div class="howto-panel" id="howto-panel">
+        <embed src="howto.pdf" type="application/pdf" />
+      </div>
 
-function yahooNaviUrl(addrs) {
-  const last = cleanForMap(addrs[addrs.length - 1]);
-  return `https://map.yahoo.co.jp/route/car?to=${enc(last)}&via=${addrs.slice(0,-1).map(a => enc(cleanForMap(a))).join('&via=')}`;
-}
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" accept=".pdf" id="file-input" />
+        <div class="dz-icon">📄</div>
+        <div class="dz-title">PDFファイルをここにドロップ</div>
+        <div class="dz-sub">またはクリックしてファイルを選択</div>
+      </div>
+      <div id="status"></div>
+      <div id="results"></div>
+    </div>
 
-function appleMapsUrl(addrs) {
-  const last = cleanForMap(addrs[addrs.length - 1]);
-  return `https://maps.apple.com/?daddr=${enc(last)}`;
-}
+    <script>
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-function enc(s) { return encodeURIComponent(s); }
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const statusEl = document.getElementById("status");
+      const resultsEl = document.getElementById("results");
 
-// 💡 NEW: 住所を消去し、QRコードとルートURLを再計算する関数
-function removeAddress(btn) {
-  const item = btn.closest('.addr-item');
-  const card = btn.closest('.town-card');
-  
-  item.style.opacity = '0';
-  
-  setTimeout(() => {
-    // 1. 項目を完全にDOMから削除
-    item.remove();
-    
-    // 2. 残っている項目をすべて取得
-    const remainingItems = card.querySelectorAll('.addr-item');
-    
-    // もし全部消し終わったら、カード自体を隠す
-    if (remainingItems.length === 0) {
-      card.style.display = 'none';
-      return;
-    }
-    
-    // 3. 残った要素から、純粋な住所データ（data-addr）だけを配列にまとめる
-    const remainingAddrs = Array.from(remainingItems).map(el => el.getAttribute('data-addr'));
-    
-    // 4. グループの件数バッジを更新
-    card.querySelector('.town-count').textContent = remainingAddrs.length + '件';
-    
-    // 5. リストの番号（1. 2. 3...）を綺麗に振り直す
-    remainingItems.forEach((el, index) => {
-      el.querySelector('.addr-text').textContent = `${index + 1}. ${esc(el.getAttribute('data-addr'))}`;
-    });
-    
-    // 6. 新しい住所リストでURLを再生成して、各アプリのボタンを上書き
-    const gUrl = googleMapsUrl(remainingAddrs);
-    const yUrl = yahooNaviUrl(remainingAddrs);
-    const aUrl = appleMapsUrl(remainingAddrs);
-    
-    card.querySelector('.btn-app.btn-google').href = gUrl;
-    card.querySelector('.btn-app.btn-yahoo').href = yUrl;
-    card.querySelector('.btn-app.btn-apple').href = aUrl;
-    
-    // 7. QRコードの中身を一回空っぽにしてから、新しいルートURLで書き直す
-    const qrBox = card.querySelector('.qr-code-img');
-    qrBox.innerHTML = '';
-    new QRCode(qrBox, {
-      text: gUrl,
-      width: 200,
-      height: 200,
-      colorDark : "#1a1a2e",
-      colorLight : "#ffffff",
-      correctLevel : QRCode.CorrectLevel.L
-    });
-    
-  }, 300); // 0.3秒のアニメーション後に処理
-}
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("drag-over");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("drag-over"),
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("drag-over");
+        const f = e.dataTransfer.files[0];
+        if (f && f.type === "application/pdf") processFile(f);
+        else showStatus("error", "PDFファイルを選択してください。");
+      });
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files[0]) processFile(e.target.files[0]);
+      });
 
-function renderResults(grouped) {
-  const towns = Object.keys(grouped);
-  const total = Object.values(grouped).reduce((s, a) => s + a.length, 0);
+      function showStatus(type, msg) {
+        statusEl.className = type;
+        statusEl.innerHTML =
+          type === "loading"
+            ? `<div class="spinner"></div><span>${msg}</span>`
+            : `<span>${type === "done" ? "✅" : "❌"}</span><span>${msg}</span>`;
+      }
 
-  let html = `
+      async function processFile(file) {
+        resultsEl.innerHTML = "";
+        showStatus("loading", "PDFを読み込んでいます...");
+        try {
+          const buf = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+          let fullText = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            fullText += content.items.map((it) => it.str).join(" ") + "\n";
+          }
+          const addresses = extractAddresses(fullText);
+          if (!addresses.length) {
+            showStatus(
+              "error",
+              "住所が見つかりませんでした。PDFにテキストが含まれているか確認してください。",
+            );
+            return;
+          }
+          const grouped = groupByTown(addresses);
+          showStatus(
+            "done",
+            `${addresses.length}件の住所を ${Object.keys(grouped).length}つの町名グループに分けました。`,
+          );
+          renderResults(grouped);
+        } catch (err) {
+          showStatus("error", "PDFの読み込みに失敗しました: " + err.message);
+        }
+      }
+
+      const PREF_STR =
+        "東京都|大阪府|京都府|北海道|神奈川県|愛知県|埼玉県|千葉県|兵庫県|福岡県|静岡県|茨城県|広島県|宮城県|新潟県|長野県|岐阜県|栃木県|群馬県|岡山県|福島県|三重県|熊本県|鹿児島県|沖縄県|滋賀県|山口県|愛媛県|奈良県|長崎県|青森県|岩手県|大分県|石川県|山形県|宮崎県|富山県|秋田県|香川県|和歌山県|佐賀県|山梨県|福井県|徳島県|高知県|島根県|鳥取県";
+      const ADDR_CLS = "[-0-9０-９丁目番地号棟室階Ff－ー―]";
+
+      function extractAddresses(rawText) {
+        let t = rawText.replace(/[•・●]+/g, "").replace(/\s+/g, "");
+        t = t.replace(/〒?[0-9０-９]{3}[-－ー―][0-9０-９]{4}/g, "");
+
+        const prefReg = new RegExp("(?:" + PREF_STR + ")", "g");
+        const positions = [];
+        let m;
+        while ((m = prefReg.exec(t)) !== null) positions.push(m.index);
+
+        const addrReg = new RegExp(
+          "^(?:" + PREF_STR + ")[^0-9０-９]+?" + ADDR_CLS + "+",
+        );
+
+        const results = [];
+        for (let i = 0; i < positions.length; i++) {
+          const chunk = t.slice(positions[i], positions[i + 1] ?? t.length);
+          const hit = chunk.match(addrReg);
+          if (hit) {
+            const addr = hit[0].replace(/[丁目番地棟室階]+$/, "");
+            if (addr.length > 5) results.push(addr);
+          }
+        }
+        return [...new Set(results)];
+      }
+
+      function extractTown(addr) {
+        const body = addr.replace(new RegExp("^(?:" + PREF_STR + ")"), "");
+        const nameOnly = body.replace(/[0-9０-９].*$/, "").trim();
+        let m;
+        m = nameOnly.match(/^(.+?市.+?区)(.*)$/);
+        if (m) return m[1] + (m[2] || "");
+        m = nameOnly.match(/^(.+?市)(.*)$/);
+        if (m) {
+          const ku = m[2].match(/^(.+?[区町村])/);
+          return m[1] + (ku ? ku[1] : m[2]);
+        }
+        m = nameOnly.match(/^(.+?区)(.*)$/);
+        if (m) return m[1] + (m[2] || "");
+        return nameOnly.slice(0, 15);
+      }
+
+      function chomeKey(addr) {
+        const normalized = addr.replace(/[０-９]/g, (c) =>
+          String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+        );
+        const m = normalized.match(/(\d+)丁目/);
+        if (m) return parseInt(m[1], 10);
+        const n = normalized.match(/(\d+)/);
+        return n ? parseInt(n[1], 10) : 9999;
+      }
+
+      function groupByTown(addresses) {
+        const groups = {};
+        for (const addr of addresses) {
+          const town = extractTown(addr);
+          if (!groups[town]) groups[town] = [];
+          groups[town].push(addr);
+        }
+        for (const town in groups) {
+          groups[town].sort((a, b) => chomeKey(a) - chomeKey(b));
+        }
+        return Object.fromEntries(
+          Object.entries(groups).sort((a, b) => b[1].length - a[1].length),
+        );
+      }
+
+      function cleanForMap(addr) {
+        return addr.replace(
+          /([0-9０-９][0-9０-９\-－ー丁目番地号]*)[^0-9０-９\-－ー丁目番地号]+.*$/,
+          "$1",
+        );
+      }
+
+      function googleMapsUrl(addrs) {
+        const targets = addrs.slice(0, 10);
+        const dest = enc(cleanForMap(targets[targets.length - 1]));
+        if (targets.length === 1) {
+          return `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
+        }
+        const wp = targets
+          .slice(0, -1)
+          .map((a) => enc(cleanForMap(a)))
+          .join("%7C");
+        return `https://www.google.com/maps/dir/?api=1&destination=${dest}&waypoints=${wp}`;
+      }
+
+      function yahooNaviUrl(addrs) {
+        const last = cleanForMap(addrs[addrs.length - 1]);
+        return `https://map.yahoo.co.jp/route/car?to=${enc(last)}&via=${addrs
+          .slice(0, -1)
+          .map((a) => enc(cleanForMap(a)))
+          .join("&via=")}`;
+      }
+
+      function appleMapsUrl(addrs) {
+        const last = cleanForMap(addrs[addrs.length - 1]);
+        return `https://maps.apple.com/?daddr=${enc(last)}`;
+      }
+
+      function enc(s) {
+        return encodeURIComponent(s);
+      }
+
+      function removeAddress(btn) {
+        const item = btn.closest(".addr-item");
+        const card = btn.closest(".town-card");
+        item.style.opacity = "0";
+        setTimeout(() => {
+          item.remove();
+          const remainingItems = card.querySelectorAll(".addr-item");
+          if (remainingItems.length === 0) {
+            card.style.display = "none";
+            return;
+          }
+          const remainingAddrs = Array.from(remainingItems).map((el) =>
+            el.getAttribute("data-addr"),
+          );
+          card.querySelector(".town-count").textContent =
+            remainingAddrs.length + "件";
+          remainingItems.forEach((el, index) => {
+            el.querySelector(".addr-text").textContent =
+              `${index + 1}. ${esc(el.getAttribute("data-addr"))}`;
+          });
+          const gUrl = googleMapsUrl(remainingAddrs);
+          const yUrl = yahooNaviUrl(remainingAddrs);
+          const aUrl = appleMapsUrl(remainingAddrs);
+          card.querySelector(".btn-app.btn-google").href = gUrl;
+          card.querySelector(".btn-app.btn-yahoo").href = yUrl;
+          card.querySelector(".btn-app.btn-apple").href = aUrl;
+          const qrBox = card.querySelector(".qr-code-img");
+          qrBox.innerHTML = "";
+          new QRCode(qrBox, {
+            text: gUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#e2e8f0",
+            colorLight: "#151929",
+            correctLevel: QRCode.CorrectLevel.L,
+          });
+        }, 300);
+      }
+
+      function renderResults(grouped) {
+        const towns = Object.keys(grouped);
+        const total = Object.values(grouped).reduce((s, a) => s + a.length, 0);
+
+        let html = `
     <div class="result-header">
       <h2>町名グループ一覧</h2>
       <span class="badge">${total}件 / ${towns.length}グループ</span>
@@ -307,12 +804,12 @@ function renderResults(grouped) {
     <button id="open-all-btn" onclick="openAllMaps()">📍 全グループをGoogle Mapsで開く</button>
   `;
 
-  let idxCard = 0;
-  for (const [town, addrs] of Object.entries(grouped)) {
-    const gUrl = googleMapsUrl(addrs);
-    const yUrl = yahooNaviUrl(addrs);
-    const aUrl = appleMapsUrl(addrs);
-    html += `
+        let idxCard = 0;
+        for (const [town, addrs] of Object.entries(grouped)) {
+          const gUrl = googleMapsUrl(addrs);
+          const yUrl = yahooNaviUrl(addrs);
+          const aUrl = appleMapsUrl(addrs);
+          html += `
       <div class="town-card">
         <div class="town-card-header" onclick="toggleCard(this)">
           <div class="town-name">📍 ${esc(town)}<span class="town-count">${addrs.length}件</span></div>
@@ -328,7 +825,9 @@ function renderResults(grouped) {
             <span>📱 スマホのカメラでスキャンしてナビ開始！</span>
             <div class="qr-code-img" id="qr-${idxCard}"></div>
           </div>
-          ${addrs.map((a, idx) => `
+          ${addrs
+            .map(
+              (a, idx) => `
             <div class="addr-item" data-addr="${esc(a)}">
               <span class="addr-text">${idx + 1}. ${esc(a)}</span>
               <div class="addr-btns">
@@ -338,54 +837,66 @@ function renderResults(grouped) {
                 <button class="btn-single bs-delete" onclick="removeAddress(this)">✖ 消去</button>
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </div>
       </div>`;
-      idxCard++;
-  }
+          idxCard++;
+        }
 
-  html += `
+        html += `
     <div class="footer-note">
       ⚠️ Google Mapsの経路案内は最大10件（現在地＋経由地9件＋目的地1件）まで。<br>
       11件以上ある場合は、最初の10件のみでルートを作成します。<br>
       Yahoo!カーナビ・Apple マップは目的地1件ずつの案内になります。
     </div>`;
 
-  resultsEl.innerHTML = html;
-  document.getElementById('open-all-btn').style.display = 'block';
+        resultsEl.innerHTML = html;
+        document.getElementById("open-all-btn").style.display = "block";
 
-  idxCard = 0;
-  for (const [town, addrs] of Object.entries(grouped)) {
-    const gUrl = googleMapsUrl(addrs);
-    new QRCode(document.getElementById(`qr-${idxCard}`), {
-      text: gUrl,
-      width: 200,
-      height: 200,
-      colorDark : "#1a1a2e",
-      colorLight : "#ffffff",
-      correctLevel : QRCode.CorrectLevel.L
-    });
-    idxCard++;
-  }
+        idxCard = 0;
+        for (const [town, addrs] of Object.entries(grouped)) {
+          const gUrl = googleMapsUrl(addrs);
+          new QRCode(document.getElementById(`qr-${idxCard}`), {
+            text: gUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#e2e8f0",
+            colorLight: "#151929",
+            correctLevel: QRCode.CorrectLevel.L,
+          });
+          idxCard++;
+        }
 
-  const first = resultsEl.querySelector('.town-card-header');
-  if (first) toggleCard(first);
-}
+        const first = resultsEl.querySelector(".town-card-header");
+        if (first) toggleCard(first);
+      }
 
-function toggleCard(header) {
-  header.nextElementSibling.classList.toggle('open');
-  header.querySelector('.chevron').classList.toggle('open');
-}
+      function toggleHowto(btn) {
+        const panel = document.getElementById("howto-panel");
+        panel.classList.toggle("open");
+        btn.querySelector(".chevron").classList.toggle("open");
+      }
 
-function openAllMaps() {
-  document.querySelectorAll('.btn-app.btn-google').forEach((link, i) => {
-    setTimeout(() => window.open(link.href, '_blank'), i * 400);
-  });
-}
+      function toggleCard(header) {
+        header.nextElementSibling.classList.toggle("open");
+        header.querySelector(".chevron").classList.toggle("open");
+      }
 
-function esc(s) {
-  return s.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');
-}
-</script>
-</body>
+      function openAllMaps() {
+        document.querySelectorAll(".btn-app.btn-google").forEach((link, i) => {
+          setTimeout(() => window.open(link.href, "_blank"), i * 400);
+        });
+      }
+
+      function esc(s) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+    </script>
+  </body>
 </html>
